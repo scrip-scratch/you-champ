@@ -13,11 +13,7 @@ export class EventsService {
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
-    const event = this.eventsRepository.create({
-      ...createEventDto,
-      startDate: new Date(createEventDto.startDate),
-      endDate: new Date(createEventDto.endDate),
-    });
+    const event = this.eventsRepository.create(createEventDto);
     return this.eventsRepository.save(event);
   }
 
@@ -39,14 +35,7 @@ export class EventsService {
 
   async update(id: string, updateEventDto: UpdateEventDto): Promise<Event> {
     const event = await this.findOne(id);
-
-    const updateData: Partial<Event> = {
-      ...updateEventDto,
-      startDate: new Date(updateEventDto.startDate),
-      endDate: new Date(updateEventDto.endDate),
-    };
-
-    Object.assign(event, updateData);
+    Object.assign(event, updateEventDto);
     return this.eventsRepository.save(event);
   }
 

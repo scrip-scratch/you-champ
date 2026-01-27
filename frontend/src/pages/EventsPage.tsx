@@ -1,5 +1,6 @@
 import { Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { api } from "../contexts/AuthContext";
 
@@ -7,9 +8,12 @@ interface Event {
   id: string;
   title: string;
   description: string | null;
+  fullDescription: string | null;
   imageUrl: string | null;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  startTime: string | null;
+  endDate: string | null;
+  endTime: string | null;
   isActive: boolean;
 }
 
@@ -37,35 +41,31 @@ export default function EventsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ru-RU", {
+  /** Форматирует YYYY-MM-DD в "15 января 2025" без таймзон */
+  const formatDateStr = (s: string | null) => {
+    if (!s) return null;
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("ru-RU", {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
   };
 
-  const formatDateRange = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    
-    const startFormatted = startDate.toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-    });
-    
-    const endFormatted = endDate.toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    if (startDate.toDateString() === endDate.toDateString()) {
-      return formatDate(start);
-    }
-
-    return `${startFormatted} — ${endFormatted}`;
+  /** Собирает строку из заполненных полей (время выводится как введено) */
+  const formatEventDateTime = (e: Event) => {
+    const parts: string[] = [];
+    if (e.startDate) parts.push(formatDateStr(e.startDate) || e.startDate);
+    if (e.startTime) parts.push(e.startTime);
+    const start = parts.join(", ");
+    const endParts: string[] = [];
+    if (e.endDate) endParts.push(formatDateStr(e.endDate) || e.endDate);
+    if (e.endTime) endParts.push(e.endTime);
+    const end = endParts.join(", ");
+    if (!start && !end) return null;
+    if (start && !end) return start;
+    if (!start && end) return end;
+    return `${start} — ${end}`;
   };
 
   const getImageUrl = (imageUrl: string | null) => {
@@ -109,32 +109,36 @@ export default function EventsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {events.map((event) => (
-            <Card key={event.id} className="overflow-hidden">
-              {event.imageUrl && (
-                <div className="aspect-video w-full overflow-hidden bg-muted">
-                  <img
-                    src={getImageUrl(event.imageUrl) || ""}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              )}
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-                {event.description && (
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                    {event.description}
-                  </p>
+            <Link key={event.id} to={`/events/${event.id}`}>
+              <Card className="overflow-hidden hover:opacity-95 transition-opacity cursor-pointer h-full">
+                {event.imageUrl && (
+                  <div className="aspect-video w-full overflow-hidden bg-muted">
+                    <img
+                      src={getImageUrl(event.imageUrl) || ""}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
                 )}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDateRange(event.startDate, event.endDate)}</span>
-                </div>
-              </CardContent>
-            </Card>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
+                  {event.description && (
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                      {event.description}
+                    </p>
+                  )}
+                  {formatEventDateTime(event) && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 shrink-0" />
+                      <span>{formatEventDateTime(event)}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

@@ -14,8 +14,11 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  email: string | null;
+  city: string | null;
   photoUrl: string | null;
   role: "participant" | "admin";
+  source: string | null;
   createdAt: string;
   updatedAt: string;
 }

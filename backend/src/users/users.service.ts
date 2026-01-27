@@ -34,7 +34,7 @@ export class UsersService {
 
   async findParticipants(search?: string): Promise<User[]> {
     const baseWhere = { role: UserRole.PARTICIPANT };
-    
+
     if (search) {
       return this.usersRepository.find({
         where: [
@@ -50,6 +50,14 @@ export class UsersService {
       where: baseWhere,
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findParticipantsBySource(source?: string): Promise<User[]> {
+    const participants = await this.findParticipants();
+    if (!source || source === 'all') {
+      return participants;
+    }
+    return participants.filter((u) => u.source === source);
   }
 
   async findOne(id: number): Promise<User | null> {

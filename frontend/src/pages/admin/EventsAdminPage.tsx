@@ -1,7 +1,7 @@
 import { Calendar, ImagePlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,14 +12,6 @@ import {
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { api } from "../../contexts/AuthContext";
 
@@ -27,18 +19,24 @@ interface Event {
   id: string;
   title: string;
   description: string | null;
+  fullDescription: string | null;
   imageUrl: string | null;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  startTime: string | null;
+  endDate: string | null;
+  endTime: string | null;
   isActive: boolean;
 }
 
 interface EventFormData {
   title: string;
   description: string;
+  fullDescription: string;
   imageUrl: string;
   startDate: string;
+  startTime: string;
   endDate: string;
+  endTime: string;
   isActive: boolean;
 }
 
@@ -47,9 +45,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const emptyFormData: EventFormData = {
   title: "",
   description: "",
+  fullDescription: "",
   imageUrl: "",
   startDate: "",
+  startTime: "",
   endDate: "",
+  endTime: "",
   isActive: true,
 };
 
@@ -83,17 +84,32 @@ export default function EventsAdminPage() {
     }
   };
 
-  const formatDateForInput = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toISOString().slice(0, 16);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("ru-RU", {
+  /** Форматирует YYYY-MM-DD в "15 января 2025" (без таймзон) */
+  const formatDateStr = (s: string | null) => {
+    if (!s) return null;
+    const [y, m, d] = s.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString("ru-RU", {
       day: "numeric",
-      month: "short",
+      month: "long",
       year: "numeric",
     });
+  };
+
+  /** Собирает строку из заполненных полей даты/времени (отображаем как введено) */
+  const formatEventDateTime = (e: Event) => {
+    const parts: string[] = [];
+    if (e.startDate) parts.push(formatDateStr(e.startDate) || e.startDate);
+    if (e.startTime) parts.push(e.startTime);
+    const start = parts.join(", ");
+    const endParts: string[] = [];
+    if (e.endDate) endParts.push(formatDateStr(e.endDate) || e.endDate);
+    if (e.endTime) endParts.push(e.endTime);
+    const end = endParts.join(", ");
+    if (!start && !end) return null;
+    if (start && !end) return start;
+    if (!start && end) return end;
+    return `${start} — ${end}`;
   };
 
   const getImageUrl = (imageUrl: string | null) => {
@@ -113,9 +129,12 @@ export default function EventsAdminPage() {
     setFormData({
       title: event.title,
       description: event.description || "",
+      fullDescription: event.fullDescription || "",
       imageUrl: event.imageUrl || "",
-      startDate: formatDateForInput(event.startDate),
-      endDate: formatDateForInput(event.endDate),
+      startDate: event.startDate || "",
+      startTime: event.startTime || "",
+      endDate: event.endDate || "",
+      endTime: event.endTime || "",
       isActive: event.isActive,
     });
     setIsDialogOpen(true);
@@ -152,8 +171,8 @@ export default function EventsAdminPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.startDate || !formData.endDate) {
-      alert("Заполните обязательные поля: название, дата начала и окончания");
+    if (!formData.title) {
+      alert("Заполните название");
       return;
     }
 
@@ -162,7 +181,12 @@ export default function EventsAdminPage() {
       const payload = {
         ...formData,
         description: formData.description || null,
+        fullDescription: formData.fullDescription || null,
         imageUrl: formData.imageUrl || null,
+        startDate: formData.startDate || null,
+        startTime: formData.startTime || null,
+        endDate: formData.endDate || null,
+        endTime: formData.endTime || null,
       };
 
       if (editingEvent) {
@@ -212,95 +236,90 @@ export default function EventsAdminPage() {
 
   return (
     <div className="container mx-auto p-4 pb-24">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>События</CardTitle>
-          <Button onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Добавить
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : events.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Нет событий
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="hidden sm:table-cell">Даты</TableHead>
-                  <TableHead className="hidden md:table-cell">Статус</TableHead>
-                  <TableHead className="w-24">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {events.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {event.imageUrl && (
-                          <img
-                            src={getImageUrl(event.imageUrl) || ""}
-                            alt={event.title}
-                            className="w-12 h-12 object-cover rounded hidden sm:block"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium">{event.title}</p>
-                          <p className="text-sm text-muted-foreground sm:hidden">
-                            {formatDate(event.startDate)}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(event.startDate)} — {formatDate(event.endDate)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          event.isActive
-                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        }`}
-                      >
-                        {event.isActive ? "Активно" : "Неактивно"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(event)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDelete(event)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex flex-row items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">События</h1>
+        <Button onClick={handleOpenCreate} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Добавить
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : events.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">Нет событий</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {events.map((event) => (
+            <Card
+              key={event.id}
+              className={`overflow-hidden ${!event.isActive ? "opacity-60" : ""}`}
+            >
+              {event.imageUrl && (
+                <div className="aspect-video w-full overflow-hidden bg-muted">
+                  <img
+                    src={getImageUrl(event.imageUrl) || ""}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="font-semibold text-lg">{event.title}</h3>
+                  <span
+                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      event.isActive
+                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    }`}
+                  >
+                    {event.isActive ? "Активно" : "Неактивно"}
+                  </span>
+                </div>
+                {event.description && (
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                    {event.description}
+                  </p>
+                )}
+                {formatEventDateTime(event) && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatEventDateTime(event)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleOpenEdit(event)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Редактировать
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleOpenDelete(event)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -331,8 +350,21 @@ export default function EventsAdminPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="Описание события"
+                placeholder="Краткое описание (на карточке)"
                 rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fullDescription">Полное описание</Label>
+              <Textarea
+                id="fullDescription"
+                value={formData.fullDescription}
+                onChange={(e) =>
+                  setFormData({ ...formData, fullDescription: e.target.value })
+                }
+                placeholder="Полное описание (на странице события)"
+                rows={6}
               />
             </div>
 
@@ -367,10 +399,10 @@ export default function EventsAdminPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Дата начала *</Label>
+                <Label htmlFor="startDate">Дата начала</Label>
                 <Input
                   id="startDate"
-                  type="datetime-local"
+                  type="date"
                   value={formData.startDate}
                   onChange={(e) =>
                     setFormData({ ...formData, startDate: e.target.value })
@@ -378,13 +410,35 @@ export default function EventsAdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">Дата окончания *</Label>
+                <Label htmlFor="startTime">Время начала</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startTime: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Дата окончания</Label>
                 <Input
                   id="endDate"
-                  type="datetime-local"
+                  type="date"
                   value={formData.endDate}
                   onChange={(e) =>
                     setFormData({ ...formData, endDate: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Время окончания</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endTime: e.target.value })
                   }
                 />
               </div>

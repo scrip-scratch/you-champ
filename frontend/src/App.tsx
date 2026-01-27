@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Header from "./components/Header";
 import BottomNavigation from "./components/BottomNavigation";
 import ProfilePage from "./pages/ProfilePage";
 import EventsPage from "./pages/EventsPage";
+import EventDetailPage from "./pages/EventDetailPage";
 import ParticipantsPage from "./pages/admin/ParticipantsPage";
+import ParticipantDetailPage from "./pages/admin/ParticipantDetailPage";
 import EventsAdminPage from "./pages/admin/EventsAdminPage";
+import SourcesAdminPage from "./pages/admin/SourcesAdminPage";
+import MarketingPage from "./pages/admin/MarketingPage";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -35,25 +40,32 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        {/* Common routes */}
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/events" element={<EventsPage />} />
+      <Header />
+      <main className="pb-16">
+        <Routes>
+          {/* Common routes */}
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/:id" element={<EventDetailPage />} />
 
-        {/* Admin routes */}
-        {isAdmin && (
-          <>
-            <Route path="/admin/participants" element={<ParticipantsPage />} />
-            <Route path="/admin/events" element={<EventsAdminPage />} />
-          </>
-        )}
+          {/* Admin routes */}
+          {isAdmin && (
+            <>
+              <Route path="/admin/participants" element={<ParticipantsPage />} />
+              <Route path="/admin/participants/:id" element={<ParticipantDetailPage />} />
+              <Route path="/admin/events" element={<EventsAdminPage />} />
+              <Route path="/admin/sources" element={<SourcesAdminPage />} />
+              <Route path="/admin/marketing" element={<MarketingPage />} />
+            </>
+          )}
 
-        {/* Default redirect based on role */}
-        <Route
-          path="*"
-          element={<Navigate to="/profile" replace />}
-        />
-      </Routes>
+          {/* Default redirect based on role */}
+          <Route
+            path="*"
+            element={<Navigate to="/profile" replace />}
+          />
+        </Routes>
+      </main>
       <BottomNavigation />
     </>
   );

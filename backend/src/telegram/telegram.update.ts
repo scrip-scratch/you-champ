@@ -2,6 +2,7 @@ import { Update, Start, Ctx } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { SourcesService } from '../sources/sources.service';
 import { UserRole } from '../users/entities/user.entity';
 
 @Update()
@@ -10,6 +11,7 @@ export class TelegramUpdate {
 
   constructor(
     private readonly usersService: UsersService,
+    private readonly sourcesService: SourcesService,
     private readonly configService: ConfigService,
   ) {
     const adminIds = this.configService.get<string>('ADMIN_TELEGRAM_IDS') || '';
@@ -22,6 +24,12 @@ export class TelegramUpdate {
     if (!telegramUser) {
       return;
     }
+
+    // Extract source from /start command payload
+    // Format: "/start source_code" or just "/start"
+    const message = (ctx.message as any)?.text || '';
+    const parts = message.split(' ');
+    const sourceCode = parts.length > 1 ? parts[1].trim() : null;
 
     const telegramId = telegramUser.id.toString();
     const isAdmin = this.adminTelegramIds.includes(telegramId);
@@ -37,13 +45,15 @@ export class TelegramUpdate {
         if (photos.total_count > 0) {
           const fileId = photos.photos[0][0].file_id;
           const file = await ctx.telegram.getFile(fileId);
-          photoUrl = `https://api.telegram.org/file/bot${this.configService.get('TELEGRAM_BOT_TOKEN')}/${file.file_path}`;
+          photoUrl = `https://api.telegram.org/file/bot${this.configService.get(
+            'TELEGRAM_BOT_TOKEN',
+          )}/${file.file_path}`;
         }
       } catch (error) {
         console.log('Could not get user photo:', error.message);
       }
 
-      // Create new user
+      // Create new user with source
       user = await this.usersService.create({
         telegramId,
         username: telegramUser.username || null,
@@ -51,7 +61,13 @@ export class TelegramUpdate {
         lastName: telegramUser.last_name || null,
         photoUrl,
         role: isAdmin ? UserRole.ADMIN : UserRole.PARTICIPANT,
+        source: sourceCode,
       });
+
+      // Increment source usage counter if source was provided
+      if (sourceCode) {
+        await this.sourcesService.incrementUsage(sourceCode);
+      }
 
       // Notify admin about new registration
       if (isAdmin) {
@@ -59,13 +75,13 @@ export class TelegramUpdate {
           `🎉 Добро пожаловать, администратор!\n\nВы зарегистрированы как администратор системы.`,
         );
       } else {
-        await ctx.reply(
-          `👋 Добро пожаловать!\n\nВы успешно зарегистрированы как участник.`,
-        );
+        await ctx.reply(`👋 Добро пожаловать!\n\nВы успешно зарегистрированы как участник.`);
       }
 
       console.log(
-        `New user registered: ${telegramUser.first_name} (${telegramId}), role: ${isAdmin ? 'admin' : 'participant'}`,
+        `New user registered: ${telegramUser.first_name} (${telegramId}), role: ${
+          isAdmin ? 'admin' : 'participant'
+        }, source: ${sourceCode || 'direct'}`,
       );
     } else {
       await ctx.reply(

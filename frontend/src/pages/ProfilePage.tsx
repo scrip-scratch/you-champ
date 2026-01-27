@@ -1,21 +1,39 @@
-import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { ImagePlus, Pencil, Save, User, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
+import { Card, CardContent, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
-import { Pencil, Save, X, User } from "lucide-react";
+import { api, useAuth } from "../contexts/AuthContext";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export default function ProfilePage() {
   const { user, updateProfile, loading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     phone: user?.phone || "",
+    email: user?.email || "",
+    city: user?.city || "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phone: user.phone || "",
+        email: user.email || "",
+        city: user.city || "",
+      });
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -56,8 +74,41 @@ export default function ProfilePage() {
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       phone: user.phone || "",
+      email: user.email || "",
+      city: user.city || "",
     });
     setIsEditing(false);
+  };
+
+  const getImageUrl = (imageUrl: string | null) => {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith("http")) return imageUrl;
+    return `${API_URL}${imageUrl}`;
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const formDataObj = new FormData();
+      formDataObj.append("file", file);
+
+      const response = await api.post("/files/upload-avatar", formDataObj, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      await updateProfile({ photoUrl: response.data.url });
+    } catch (e) {
+      console.error("Failed to upload avatar:", e);
+      alert("Не удалось загрузить аватар");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const getInitials = () => {
@@ -72,8 +123,8 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 pb-24">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <div>
+        <div className="flex flex-row items-center justify-between">
           <CardTitle>Профиль</CardTitle>
           {!isEditing ? (
             <Button
@@ -103,18 +154,41 @@ export default function ProfilePage() {
               </Button>
             </div>
           )}
-        </CardHeader>
-        <CardContent className="space-y-6">
+        </div>
+        <div className="space-y-6">
           {/* Avatar Section */}
           <div className="flex flex-col items-center gap-3">
-            <Avatar className="h-24 w-24">
-              {user.photoUrl ? (
-                <AvatarImage src={user.photoUrl} alt={user.firstName || "User"} />
-              ) : null}
-              <AvatarFallback className="text-2xl">
-                {user.photoUrl ? getInitials() : <User className="h-10 w-10" />}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-24 w-24">
+                {user.photoUrl ? (
+                  <AvatarImage
+                    src={getImageUrl(user.photoUrl) || ""}
+                    alt={user.firstName || "User"}
+                  />
+                ) : null}
+                <AvatarFallback className="text-2xl">
+                  {user.photoUrl ? getInitials() : <User className="h-10 w-10" />}
+                </AvatarFallback>
+              </Avatar>
+              {isEditing && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute bottom-0 right-0 rounded-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </Button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 @{user.username || "нет username"}
@@ -181,9 +255,47 @@ export default function ProfilePage() {
                 </p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              {isEditing ? (
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="example@mail.com"
+                />
+              ) : (
+                <p className="text-sm py-2 px-3 bg-muted rounded-md">
+                  {user.email || "Не указано"}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">Город</Label>
+              {isEditing ? (
+                <Input
+                  id="city"
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
+                  placeholder="Москва"
+                />
+              ) : (
+                <p className="text-sm py-2 px-3 bg-muted rounded-md">
+                  {user.city || "Не указано"}
+                </p>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

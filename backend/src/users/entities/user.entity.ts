@@ -32,6 +32,12 @@ export class User {
   phone: string;
 
   @Column({ nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  city: string;
+
+  @Column({ nullable: true })
   photoUrl: string;
 
   @Column({
@@ -40,6 +46,9 @@ export class User {
     default: UserRole.PARTICIPANT,
   })
   role: UserRole;
+
+  @Column({ nullable: true })
+  source: string;
 
   @CreateDateColumn()
   createdAt: Date;

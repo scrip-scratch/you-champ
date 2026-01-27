@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
 import { FilesModule } from './files/files.module';
+import { SourcesModule } from './sources/sources.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { UsersModule } from './users/users.module';
 
@@ -56,6 +57,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     EventsModule,
     FilesModule,
+    SourcesModule,
     TelegramModule,
   ],
   controllers: [AppController],

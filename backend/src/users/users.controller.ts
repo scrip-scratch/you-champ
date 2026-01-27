@@ -4,8 +4,10 @@ import {
   Patch,
   Body,
   Query,
+  Param,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -34,5 +36,16 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   async findAll(@Query('search') search?: string) {
     return this.usersService.findParticipants(search);
+  }
+
+  @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async findOne(@Param('id') id: string) {
+    const user = await this.usersService.findOne(parseInt(id, 10));
+    if (!user) {
+      throw new NotFoundException('Участник не найден');
+    }
+    return user;
   }
 }
