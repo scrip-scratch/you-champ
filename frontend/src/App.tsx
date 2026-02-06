@@ -51,8 +51,14 @@ function AppContent() {
           {/* Admin routes */}
           {isAdmin && (
             <>
-              <Route path="/admin/participants" element={<ParticipantsPage />} />
-              <Route path="/admin/participants/:id" element={<ParticipantDetailPage />} />
+              <Route
+                path="/admin/participants"
+                element={<ParticipantsPage />}
+              />
+              <Route
+                path="/admin/participants/:id"
+                element={<ParticipantDetailPage />}
+              />
               <Route path="/admin/events" element={<EventsAdminPage />} />
               <Route path="/admin/sources" element={<SourcesAdminPage />} />
               <Route path="/admin/marketing" element={<MarketingPage />} />
@@ -60,10 +66,7 @@ function AppContent() {
           )}
 
           {/* Default redirect based on role */}
-          <Route
-            path="*"
-            element={<Navigate to="/profile" replace />}
-          />
+          <Route path="*" element={<Navigate to="/profile" replace />} />
         </Routes>
       </main>
       <BottomNavigation />
@@ -79,6 +82,9 @@ function App() {
       const tg = window.Telegram.WebApp;
       tg.ready();
       tg.expand();
+      if (tg.disableVerticalSwipes) {
+        tg.disableVerticalSwipes();
+      }
       setTg(tg);
 
       console.log("Telegram WebApp initialized");

@@ -60,7 +60,15 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await updateProfile(formData);
+      // Пустые строки отправляем как null, чтобы бэкенд не падал по валидации
+      const payload = {
+        firstName: formData.firstName || null,
+        lastName: formData.lastName || null,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        city: formData.city || null,
+      };
+      await updateProfile(payload);
       setIsEditing(false);
     } catch (e) {
       console.error("Failed to save profile:", e);
@@ -124,37 +132,7 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto p-4 pb-24">
       <div>
-        <div className="flex flex-row items-center justify-between">
-          <CardTitle>Профиль</CardTitle>
-          {!isEditing ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsEditing(true)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+        <CardTitle className="mb-6">Профиль</CardTitle>
         <div className="space-y-6">
           {/* Avatar Section */}
           <div className="flex flex-col items-center gap-3">
@@ -167,7 +145,11 @@ export default function ProfilePage() {
                   />
                 ) : null}
                 <AvatarFallback className="text-2xl">
-                  {user.photoUrl ? getInitials() : <User className="h-10 w-10" />}
+                  {user.photoUrl ? (
+                    getInitials()
+                  ) : (
+                    <User className="h-10 w-10" />
+                  )}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
@@ -293,6 +275,40 @@ export default function ProfilePage() {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Кнопки действий внизу блока */}
+          <div className="flex flex-col gap-2 pt-2">
+            {!isEditing ? (
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Редактировать
+              </Button>
+            ) : (
+              <>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Отменить
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

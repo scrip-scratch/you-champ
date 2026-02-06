@@ -13,6 +13,7 @@ declare global {
         };
         ready: () => void;
         expand: () => void;
+        disableVerticalSwipes?: () => void;
         close: () => void;
         showAlert: (message: string) => void;
         showConfirm: (message: string) => Promise<boolean>;
@@ -46,4 +47,3 @@ declare global {
 }
 
 export {};
-

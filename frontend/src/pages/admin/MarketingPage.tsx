@@ -106,15 +106,16 @@ export default function MarketingPage() {
     const startTime = Date.now();
     const duration = 3000;
     const interval = 50;
+    const count = filtered.length;
     const animationInterval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= duration) {
         clearInterval(animationInterval);
-        const randomIndex = Math.floor(Math.random() * filtered.length);
+        const randomIndex = Math.floor(Math.random() * count);
         setWinner(filtered[randomIndex]);
         setIsRaffling(false);
       } else {
-        setDisplayNumber(Math.floor(Math.random() * 10000) + 1);
+        setDisplayNumber(Math.floor(Math.random() * count) + 1);
       }
     }, interval);
   };
@@ -302,7 +303,10 @@ export default function MarketingPage() {
                       {winner.username && (
                         <Button variant="default" asChild className="w-full">
                           <a
-                            href={`https://t.me/${winner.username.replace("@", "")}`}
+                            href={`https://t.me/${winner.username.replace(
+                              "@",
+                              ""
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

@@ -10,11 +10,8 @@ export class TelegramService {
     private readonly usersService: UsersService,
   ) {}
 
-  async sendNotificationToUser(
-    telegramId: string,
-    adminUsername: string,
-  ): Promise<void> {
-    const message = `🎉 Поздравляем! Вы стали победителем розыгрыша!\n\nПожалуйста, свяжитесь с администратором для получения приза:\n@${adminUsername}`;
+  async sendNotificationToUser(telegramId: string, adminUsername: string): Promise<void> {
+    const message = `🎉 Поздравляем! Вы стали победителем розыгрыша путевки в первый танцевальный лагерь YC Summer Camp!\n\nПожалуйста, свяжитесь с администратором для получения приза:\n@${adminUsername}`;
 
     try {
       await this.bot.telegram.sendMessage(parseInt(telegramId), message);
@@ -24,7 +21,10 @@ export class TelegramService {
     }
   }
 
-  async broadcastMessage(message: string, source?: string): Promise<{ sent: number; failed: number }> {
+  async broadcastMessage(
+    message: string,
+    source?: string,
+  ): Promise<{ sent: number; failed: number }> {
     const participants = await this.usersService.findParticipantsBySource(source);
     let sent = 0;
     let failed = 0;
