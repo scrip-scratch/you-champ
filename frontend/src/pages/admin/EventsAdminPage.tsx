@@ -21,6 +21,8 @@ interface Event {
   description: string | null;
   fullDescription: string | null;
   imageUrl: string | null;
+  siteUrl: string | null;
+  siteUrlText: string | null;
   startDate: string | null;
   startTime: string | null;
   endDate: string | null;
@@ -33,6 +35,8 @@ interface EventFormData {
   description: string;
   fullDescription: string;
   imageUrl: string;
+  siteUrl: string;
+  siteUrlText: string;
   startDate: string;
   startTime: string;
   endDate: string;
@@ -47,6 +51,8 @@ const emptyFormData: EventFormData = {
   description: "",
   fullDescription: "",
   imageUrl: "",
+  siteUrl: "",
+  siteUrlText: "",
   startDate: "",
   startTime: "",
   endDate: "",
@@ -131,6 +137,8 @@ export default function EventsAdminPage() {
       description: event.description || "",
       fullDescription: event.fullDescription || "",
       imageUrl: event.imageUrl || "",
+      siteUrl: event.siteUrl || "",
+      siteUrlText: event.siteUrlText || "",
       startDate: event.startDate || "",
       startTime: event.startTime || "",
       endDate: event.endDate || "",
@@ -183,6 +191,8 @@ export default function EventsAdminPage() {
         description: formData.description || null,
         fullDescription: formData.fullDescription || null,
         imageUrl: formData.imageUrl || null,
+        siteUrl: formData.siteUrl || null,
+        siteUrlText: formData.siteUrlText || null,
         startDate: formData.startDate || null,
         startTime: formData.startTime || null,
         endDate: formData.endDate || null,
@@ -395,6 +405,30 @@ export default function EventsAdminPage() {
                   {uploading ? "Загрузка..." : "Загрузить изображение"}
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="siteUrl">Ссылка на сайт</Label>
+              <Input
+                id="siteUrl"
+                value={formData.siteUrl}
+                onChange={(e) =>
+                  setFormData({ ...formData, siteUrl: e.target.value })
+                }
+                placeholder="https://example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="siteUrlText">Текст на ссылке</Label>
+              <Input
+                id="siteUrlText"
+                value={formData.siteUrlText}
+                onChange={(e) =>
+                  setFormData({ ...formData, siteUrlText: e.target.value })
+                }
+                placeholder="Подробнее"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

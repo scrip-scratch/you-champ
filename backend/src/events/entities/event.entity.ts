@@ -23,6 +23,12 @@ export class Event {
   @Column({ nullable: true })
   imageUrl: string;
 
+  @Column({ type: 'text', nullable: true })
+  siteUrl: string;
+
+  @Column({ type: 'text', nullable: true })
+  siteUrlText: string;
+
   /** Дата начала (YYYY-MM-DD), выводится как есть без таймзон */
   @Column({ type: 'varchar', length: 10, nullable: true })
   startDate: string;

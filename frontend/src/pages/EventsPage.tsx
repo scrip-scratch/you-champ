@@ -1,6 +1,7 @@
-import { Calendar } from "lucide-react";
+import { Calendar, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { api } from "../contexts/AuthContext";
 
@@ -10,6 +11,8 @@ interface Event {
   description: string | null;
   fullDescription: string | null;
   imageUrl: string | null;
+  siteUrl: string | null;
+  siteUrlText: string | null;
   startDate: string | null;
   startTime: string | null;
   endDate: string | null;
@@ -109,36 +112,51 @@ export default function EventsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {events.map((event) => (
-            <Link key={event.id} to={`/events/${event.id}`}>
-              <Card className="overflow-hidden hover:opacity-95 transition-opacity cursor-pointer h-full">
-                {event.imageUrl && (
-                  <div className="aspect-video w-full overflow-hidden bg-muted">
-                    <img
-                      src={getImageUrl(event.imageUrl) || ""}
-                      alt={event.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
+            <Card key={event.id} className="overflow-hidden h-full">
+              {event.imageUrl && (
+                <div className="aspect-video w-full overflow-hidden bg-muted">
+                  <img
+                    src={getImageUrl(event.imageUrl) || ""}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
+                {event.description && (
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                    {event.description}
+                  </p>
+                )}
+                {formatEventDateTime(event) && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 shrink-0" />
+                    <span>{formatEventDateTime(event)}</span>
                   </div>
                 )}
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-                  {event.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                      {event.description}
-                    </p>
+                <div className="flex items-center gap-2 pt-3 mt-3 border-t">
+                  <Button asChild variant="outline" size="sm" className="flex-1">
+                    <Link to={`/events/${event.id}`}>Подробнее</Link>
+                  </Button>
+                  {event.siteUrl && event.siteUrlText && (
+                    <Button asChild size="sm" className="flex-1">
+                      <a
+                        href={event.siteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {event.siteUrlText}
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                      </a>
+                    </Button>
                   )}
-                  {formatEventDateTime(event) && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      <span>{formatEventDateTime(event)}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </Link>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

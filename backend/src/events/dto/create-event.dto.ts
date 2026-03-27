@@ -16,6 +16,14 @@ export class CreateEventDto {
   @IsString()
   imageUrl?: string;
 
+  @IsOptional()
+  @IsString()
+  siteUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  siteUrlText?: string;
+
   /** Дата начала YYYY-MM-DD */
   @IsOptional()
   @IsString()

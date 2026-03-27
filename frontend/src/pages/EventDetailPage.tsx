@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -11,6 +11,8 @@ interface Event {
   description: string | null;
   fullDescription: string | null;
   imageUrl: string | null;
+  siteUrl: string | null;
+  siteUrlText: string | null;
   startDate: string | null;
   startTime: string | null;
   endDate: string | null;
@@ -164,6 +166,20 @@ export default function EventDetailPage() {
           {descriptionToShow && (
             <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
               {descriptionToShow}
+            </div>
+          )}
+          {event.siteUrl && event.siteUrlText && (
+            <div className="mt-6">
+              <Button asChild>
+                <a
+                  href={event.siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {event.siteUrlText}
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </a>
+              </Button>
             </div>
           )}
         </CardContent>
