@@ -65,8 +65,8 @@ function AppContent() {
             </>
           )}
 
-          {/* Default redirect based on role */}
-          <Route path="*" element={<Navigate to="/profile" replace />} />
+          {/* Default redirect */}
+          <Route path="*" element={<Navigate to="/events" replace />} />
         </Routes>
       </main>
       <BottomNavigation />
