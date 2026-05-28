@@ -1,9 +1,10 @@
 import { ArrowLeft, Calendar, Clock, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { api } from "../contexts/AuthContext";
+import { isInternalAppPath } from "../lib/utils";
 
 interface Event {
   id: string;
@@ -171,14 +172,18 @@ export default function EventDetailPage() {
           {event.siteUrl && event.siteUrlText && (
             <div className="mt-6">
               <Button asChild>
-                <a
-                  href={event.siteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {event.siteUrlText}
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </a>
+                {isInternalAppPath(event.siteUrl) ? (
+                  <Link to={event.siteUrl}>{event.siteUrlText}</Link>
+                ) : (
+                  <a
+                    href={event.siteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {event.siteUrlText}
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </a>
+                )}
               </Button>
             </div>
           )}

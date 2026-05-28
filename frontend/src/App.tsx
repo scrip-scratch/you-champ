@@ -11,6 +11,8 @@ import ParticipantDetailPage from "./pages/admin/ParticipantDetailPage";
 import EventsAdminPage from "./pages/admin/EventsAdminPage";
 import SourcesAdminPage from "./pages/admin/SourcesAdminPage";
 import MarketingPage from "./pages/admin/MarketingPage";
+import CampPage from "./pages/CampPage";
+import CampAdminPage from "./pages/admin/CampAdminPage";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -47,6 +49,7 @@ function AppContent() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/:id" element={<EventDetailPage />} />
+          <Route path="/camp" element={<CampPage />} />
 
           {/* Admin routes */}
           {isAdmin && (
@@ -62,6 +65,7 @@ function AppContent() {
               <Route path="/admin/events" element={<EventsAdminPage />} />
               <Route path="/admin/sources" element={<SourcesAdminPage />} />
               <Route path="/admin/marketing" element={<MarketingPage />} />
+              <Route path="/admin/camp" element={<CampAdminPage />} />
             </>
           )}
 

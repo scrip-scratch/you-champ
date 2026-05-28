@@ -1,10 +1,18 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 
 class SendNotificationDto {
   @IsString()
@@ -24,6 +32,10 @@ class BroadcastDto {
   @IsOptional()
   @IsString()
   source?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  campRegistrantsOnly?: boolean;
 }
 
 @Controller('telegram')
@@ -43,15 +55,22 @@ export class TelegramController {
 
   @Post('broadcast')
   async broadcast(@Body() dto: BroadcastDto) {
-    const result = await this.telegramService.broadcastMessage(
+    const { jobId } = await this.telegramService.enqueueBroadcast(
       dto.message,
       dto.source === 'all' || !dto.source ? undefined : dto.source,
+      !!dto.campRegistrantsOnly,
     );
     return {
       success: true,
-      sent: result.sent,
-      failed: result.failed,
-      message: `Отправлено: ${result.sent}, не доставлено: ${result.failed}`,
+      jobId,
+      message:
+        'Рассылка поставлена в очередь. Идёт отправка — статус обновляется на странице.',
     };
+  }
+
+  @Get('broadcast/jobs/:jobId')
+  async broadcastJobStatus(@Param('jobId', ParseUUIDPipe) jobId: string) {
+    const status = await this.telegramService.getBroadcastJobStatus(jobId);
+    return { success: true, ...status };
   }
 }

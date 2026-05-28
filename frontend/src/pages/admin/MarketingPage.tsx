@@ -24,6 +24,7 @@ import {
 } from "../../components/ui/tabs";
 import { Textarea } from "../../components/ui/textarea";
 import { api, useAuth, User } from "../../contexts/AuthContext";
+import type { CampRegistration } from "../CampPage";
 
 interface Source {
   id: string;
@@ -43,13 +44,21 @@ export default function MarketingPage() {
   const [sendingNotification, setSendingNotification] = useState(false);
 
   // Mailing tab state
+  const [mailingAudience, setMailingAudience] = useState<
+    "participants" | "camp"
+  >("participants");
   const [mailingSource, setMailingSource] = useState<string>("all");
   const [mailingMessage, setMailingMessage] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastJobId, setBroadcastJobId] = useState<string | null>(null);
+  const [broadcastProgress, setBroadcastProgress] = useState(0);
   const [broadcastResult, setBroadcastResult] = useState<{
     sent: number;
     failed: number;
   } | null>(null);
+  const [campRegistrations, setCampRegistrations] = useState<
+    CampRegistration[]
+  >([]);
 
   useEffect(() => {
     fetchSources();
@@ -62,6 +71,66 @@ export default function MarketingPage() {
   useEffect(() => {
     fetchParticipants();
   }, []);
+
+  const fetchCampRegistrations = async () => {
+    try {
+      const response = await api.get<CampRegistration[]>("/camp/registrations");
+      setCampRegistrations(response.data);
+    } catch (e) {
+      console.error("Failed to fetch camp registrations:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampRegistrations();
+  }, []);
+
+  useEffect(() => {
+    if (!broadcastJobId) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get<{
+          success: boolean;
+          state: string;
+          progress: number;
+          result?: { sent: number; failed: number };
+          failedReason?: string;
+        }>(`/telegram/broadcast/jobs/${broadcastJobId}`);
+
+        setBroadcastProgress(
+          typeof res.data.progress === "number" ? res.data.progress : 0,
+        );
+
+        if (res.data.state === "completed") {
+          setBroadcastResult(
+            res.data.result ?? { sent: 0, failed: 0 },
+          );
+          setBroadcastJobId(null);
+          setSendingBroadcast(false);
+        } else if (res.data.state === "failed") {
+          setBroadcastJobId(null);
+          setSendingBroadcast(false);
+          alert(
+            res.data.failedReason ||
+              "Рассылка завершилась с ошибкой. Проверьте логи сервера.",
+          );
+        } else if (res.data.state === "not_found") {
+          setBroadcastJobId(null);
+          setSendingBroadcast(false);
+          alert(
+            "Задача рассылки не найдена (возможно, истёк срок хранения в Redis).",
+          );
+        }
+      } catch (e: unknown) {
+        console.error("Broadcast status poll failed:", e);
+      }
+    };
+
+    void poll();
+    const interval = setInterval(() => void poll(), 2000);
+    return () => clearInterval(interval);
+  }, [broadcastJobId]);
 
   const fetchSources = async () => {
     try {
@@ -140,6 +209,12 @@ export default function MarketingPage() {
   };
 
   const getMailingRecipientsCount = () => {
+    if (mailingAudience === "camp") {
+      if (mailingSource === "all") return campRegistrations.length;
+      return campRegistrations.filter(
+        (r) => r.user?.source === mailingSource
+      ).length;
+    }
     if (mailingSource === "all") return participants.length;
     return participants.filter((p) => p.source === mailingSource).length;
   };
@@ -154,18 +229,27 @@ export default function MarketingPage() {
       alert("Нет получателей для рассылки");
       return;
     }
-    if (!confirm(`Отправить сообщение ${count} участникам?`)) return;
+    const audienceLabel =
+      mailingAudience === "camp"
+        ? "зарегистрированным на Camp"
+        : "участникам";
+    if (!confirm(`Отправить сообщение ${count} ${audienceLabel}?`)) return;
     try {
       setSendingBroadcast(true);
       setBroadcastResult(null);
-      const res = await api.post("/telegram/broadcast", {
+      setBroadcastProgress(0);
+      const res = await api.post<{
+        success: boolean;
+        jobId: string;
+        message?: string;
+      }>("/telegram/broadcast", {
         message: mailingMessage.trim(),
         source: mailingSource === "all" ? undefined : mailingSource,
+        campRegistrantsOnly: mailingAudience === "camp",
       });
-      setBroadcastResult({ sent: res.data.sent, failed: res.data.failed });
+      setBroadcastJobId(res.data.jobId);
     } catch (e: any) {
-      alert(e.response?.data?.message || "Не удалось выполнить рассылку");
-    } finally {
+      alert(e.response?.data?.message || "Не удалось поставить рассылку в очередь");
       setSendingBroadcast(false);
     }
   };
@@ -347,17 +431,47 @@ export default function MarketingPage() {
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <div className="space-y-2">
-                  <Label>Фильтр по источнику</Label>
+                  <Label>Аудитория</Label>
+                  <Select
+                    value={mailingAudience}
+                    onValueChange={(v) => {
+                      setMailingAudience(v as "participants" | "camp");
+                      setBroadcastResult(null);
+                    }}
+                    disabled={sendingBroadcast}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participants">
+                        Все участники
+                      </SelectItem>
+                      <SelectItem value="camp">
+                        Зарегистрированные на Camp
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    {mailingAudience === "camp"
+                      ? "Источник (среди заявок на Camp)"
+                      : "Фильтр по источнику"}
+                  </Label>
                   <Select
                     value={mailingSource}
-                    onValueChange={setMailingSource}
+                    onValueChange={(v) => {
+                      setMailingSource(v);
+                      setBroadcastResult(null);
+                    }}
                     disabled={sendingBroadcast}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите источник" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Все участники</SelectItem>
+                      <SelectItem value="all">Все</SelectItem>
                       {sources.map((s) => (
                         <SelectItem key={s.id} value={s.code}>
                           {s.name} ({s.code})
@@ -382,6 +496,12 @@ export default function MarketingPage() {
                   />
                 </div>
 
+                {sendingBroadcast && broadcastJobId && (
+                  <p className="text-sm text-muted-foreground">
+                    Рассылка выполняется в фоне… прогресс: {broadcastProgress}%
+                  </p>
+                )}
+
                 {broadcastResult && (
                   <p className="text-sm text-muted-foreground">
                     Отправлено: {broadcastResult.sent}, не доставлено:{" "}
@@ -400,7 +520,9 @@ export default function MarketingPage() {
                   size="lg"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  {sendingBroadcast ? "Отправка..." : "Разослать сообщение"}
+                  {sendingBroadcast
+                    ? "Рассылка…"
+                    : "Разослать сообщение"}
                 </Button>
               </CardContent>
             </Card>

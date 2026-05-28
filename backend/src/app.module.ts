@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,6 +11,7 @@ import { FilesModule } from './files/files.module';
 import { SourcesModule } from './sources/sources.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { UsersModule } from './users/users.module';
+import { CampModule } from './camp/camp.module';
 
 @Module({
   imports: [
@@ -52,6 +54,18 @@ import { UsersModule } from './users/users.module';
       },
       inject: [ConfigService],
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', '127.0.0.1'),
+          port: parseInt(configService.get<string>('REDIS_PORT', '6379'), 10),
+          // password: configService.get<string>('REDIS_PASSWORD') || undefined,
+          // username: configService.get<string>('REDIS_USERNAME') || undefined,
+        },
+      }),
+      inject: [ConfigService],
+    }),
     ScheduleModule.forRoot(),
     UsersModule,
     AuthModule,
@@ -59,6 +73,7 @@ import { UsersModule } from './users/users.module';
     FilesModule,
     SourcesModule,
     TelegramModule,
+    CampModule,
   ],
   controllers: [AppController],
   providers: [AppService],

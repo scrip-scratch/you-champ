@@ -1,4 +1,10 @@
-import { Calendar, Megaphone, QrCode, User, Users } from "lucide-react";
+import {
+  Calendar,
+  Megaphone,
+  QrCode,
+  User,
+  Users
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -16,6 +22,7 @@ export default function BottomNavigation() {
   const participantMenuItems = [
     { path: "/profile", label: "Профиль", icon: User },
     { path: "/events", label: "События", icon: Calendar },
+    // { path: "/camp", label: "Camp", icon: Tent },
   ];
 
   // Навигация для Администратора
@@ -25,6 +32,7 @@ export default function BottomNavigation() {
     { path: "/admin/events", label: "События", icon: Calendar },
     { path: "/admin/sources", label: "Источники", icon: QrCode },
     { path: "/admin/marketing", label: "Маркетинг", icon: Megaphone },
+    // { path: "/admin/camp", label: "Camp", icon: Tent },
   ];
 
   const menuItems = isAdmin ? adminMenuItems : participantMenuItems;
@@ -48,7 +56,11 @@ export default function BottomNavigation() {
               (item.path === "/admin/sources" &&
                 location.pathname.startsWith("/admin/sources")) ||
               (item.path === "/admin/marketing" &&
-                location.pathname.startsWith("/admin/marketing"));
+                location.pathname.startsWith("/admin/marketing")) ||
+              (item.path === "/camp" &&
+                location.pathname.startsWith("/camp")) ||
+              (item.path === "/admin/camp" &&
+                location.pathname.startsWith("/admin/camp"));
 
             return (
               <button
